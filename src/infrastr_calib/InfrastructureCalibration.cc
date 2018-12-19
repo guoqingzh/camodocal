@@ -4,6 +4,7 @@
 #include <boost/make_shared.hpp>
 #include <iostream>
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/imgproc/types_c.h>
 
 #include "../camera_models/CostFunctionFactory.h"
 #include "../features2d/SurfGPU.h"

@@ -11,6 +11,7 @@
 
 #ifdef HAVE_OPENCV3
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/types_c.h>
 #else
 #include <opencv2/imgproc/imgproc.hpp>
 #endif // HAVE_OPENCV3

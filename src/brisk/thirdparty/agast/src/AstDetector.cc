@@ -18,6 +18,7 @@
 
 #include "AstDetector.h"
 #include "cvWrapper.h"
+#include <opencv2/core/types_c.h>
 
 using namespace std;
 using namespace agast;

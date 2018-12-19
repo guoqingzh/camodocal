@@ -17,6 +17,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/calib3d/calib3d_c.h>
 
 #include "ceres/ceres.h"
 #include "../camera_models/CostFunctionFactory.h"

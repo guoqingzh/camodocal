@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include "cvWrapper.h"
 #include "agast5_8.h"
+#include <opencv2/core/types_c.h>
 
 using namespace std;
 using namespace agast;
