@@ -15,6 +15,32 @@ camodocal_link_libraries(intrinsic_calib
   camodocal_chessboard
 )
 
+camodocal_executable(undistort
+        undistort.cc
+        )
+camodocal_link_libraries(undistort
+        ${CAMODOCAL_PLATFORM_UNIX_LIBRARIES}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${OpenCV_LIBS}
+        camodocal_calib
+        camodocal_chessboard
+        )
+
+camodocal_executable(ipm
+        ipm.cc
+        )
+camodocal_link_libraries(ipm
+        ${CAMODOCAL_PLATFORM_UNIX_LIBRARIES}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+        ${OpenCV_LIBS}
+        camodocal_calib
+        camodocal_chessboard
+        )
+
 camodocal_executable(stereo_calib
   stereo_calib.cc
 )
