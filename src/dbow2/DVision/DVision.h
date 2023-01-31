@@ -52,7 +52,7 @@ namespace DVision
 }
 
 // Features and descriptors
-#include "SurfSet.h"
+//#include "SurfSet.h"
 #include "BRIEF.h"
 #include "ORB.h"
 
@@ -60,7 +60,7 @@ namespace DVision
 #include "ImageFunctions.h"
 
 // Matches
-#include "Matches.h"
+//#include "Matches.h"
 
 // Pixels and 3d
 #include "PixelPointFile.h"

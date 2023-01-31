@@ -1,4 +1,4 @@
-if(OpenCV_FOUND)
+if(OpenCV_FOUND AND HAVE_OPENCV_XFEATURES2D_NONFREE)
 #agast
 add_subdirectory(thirdparty/agast) 
 include_directories(thirdparty/agast/include) 
@@ -14,4 +14,4 @@ camodocal_library(camodocal_brisk SHARED ${BRISK_SOURCE_FILES} ${BRISK_HEADER_FI
 camodocal_link_libraries(camodocal_brisk agast ${OpenCV_LIBS})
 
 camodocal_install(camodocal_brisk)
-endif()
+endif(OpenCV_FOUND AND HAVE_OPENCV_XFEATURES2D_NONFREE)

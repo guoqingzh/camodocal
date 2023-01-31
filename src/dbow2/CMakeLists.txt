@@ -11,9 +11,9 @@ include_directories(
   DVision
 )
 
-camodocal_executable(dbow2_demo
-  demo.cpp
-)
+#camodocal_executable(dbow2_demo
+#  demo.cpp
+#)
 
 camodocal_link_libraries(dbow2_demo
   ${CAMODOCAL_PLATFORM_UNIX_LIBRARIES}
@@ -22,4 +22,4 @@ camodocal_link_libraries(dbow2_demo
   camodocal_dutilscv
   camodocal_dvision
 )
-endif()
+endif(OpenCV_FOUND)
