@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
 
-set(PROJECT_VERSION 1.0.1)
-project(CAMODOCAL LANGUAGES C CXX)
+if (POLICY CMP0048)
+    cmake_policy(SET CMP0048 NEW)
+endif()
 
+project(CAMODOCAL LANGUAGES C CXX VERSION 1.0)
 
 ########################### Misc. Configs ##############################
 # Add custom cmake files folder
