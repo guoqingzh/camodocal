@@ -32,7 +32,7 @@ int main()
 //	cv::Mat E = findEssentialMat(m1, m2); 
 	srand(time(0)); 
 	cv::Mat mask; 
-	cv::Mat E = findEssentialMat(m1, m2, 300, cv::Point2d(320, 400), CV_FM_RANSAC, 1.0 - 1e-10, 1, mask); 
+	cv::Mat E = findEssentialMat5P(m1, m2, 300, cv::Point2d(320, 400), CV_FM_RANSAC, 1.0 - 1e-10, 1, mask); 
 	std::cout << E << std::endl; 
 	cv::Mat R1, R2, t; 
 	decomposeEssentialMat(E, R1, R2, t); 

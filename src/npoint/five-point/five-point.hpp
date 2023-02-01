@@ -6,7 +6,7 @@
 
 using namespace cv; 
 
-Mat findEssentialMat( InputArray points1, InputArray points2, double focal = 1.0, Point2d pp = Point2d(0, 0), 
+Mat findEssentialMat5P( InputArray points1, InputArray points2, double focal = 1.0, Point2d pp = Point2d(0, 0), 
 					int method = CV_FM_RANSAC, 
 					double prob = 0.999, double threshold = 1, int maxIters = 1000, OutputArray mask = noArray() ); 
 

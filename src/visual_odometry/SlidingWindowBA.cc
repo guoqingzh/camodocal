@@ -134,7 +134,7 @@ SlidingWindowBA::addFrame(FramePtr& frame)
         if (m_mode == VO)
         {
             cv::Mat E, R_cv, t_cv;
-            E = findEssentialMat(rectImagePoints[0], rectImagePoints[1], 1.0, cv::Point2d(0.0, 0.0),
+            E = findEssentialMat5P(rectImagePoints[0], rectImagePoints[1], 1.0, cv::Point2d(0.0, 0.0),
                                  CV_FM_RANSAC, 0.99, k_reprojErrorThresh / k_nominalFocalLength, 100, inliers);
             recoverPose(E, rectImagePoints[0], rectImagePoints[1], R_cv, t_cv, 1.0, cv::Point2d(0.0, 0.0), inliers);
 
