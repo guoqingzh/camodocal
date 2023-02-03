@@ -22,7 +22,7 @@ odom_topics = ['/odom']
 output_path = "./cali_seq"
 caminfo_topics = ['/d400/color/camera_info']
 caminfo_path = "./caminfo"
-camera_name = "0" 
+camera_name = "id0" 
 
 odom_connections = []
 image_connections = []
