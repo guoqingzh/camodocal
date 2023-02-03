@@ -89,7 +89,6 @@ with Reader(input_rosbag) as reader:
         with open(fn, 'w') as writer:
             writer.write(calib_yaml_template.format(camera_name,msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
         print("Saved: {}".format(fn))        
-    exit(0)
 
     print("Parsing odometry data:")
     for connection, timestamp, rawdata in reader.messages(connections=odom_connections):
