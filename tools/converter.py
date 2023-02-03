@@ -113,6 +113,6 @@ with Reader(input_rosbag) as reader:
         image_data_3[:,:,1] = image_data[:,1::3]
         image_data_3[:,:,2] = image_data[:,2::3]
         gray = rgb2gray(image_data_3)
-        fn = '{}/camera_{}_{}.png'.format(camera_name, output_path,timestamp)
+        fn = '{}/camera_{}_{}.png'.format(output_path, camera_name, timestamp)
         plt.imsave( fn, gray, cmap='gray',format='png', vmin=0, vmax=1)
         print("Saved: {}".format(fn))
