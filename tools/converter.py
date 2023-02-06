@@ -20,7 +20,7 @@ import numpy as np
 ##
 
 
-input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/cafe1-1.bag')
+input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/corridor1-1.bag')
 basename = os.path.splitext(os.path.basename(input_rosbag))[0]
 output_path = os.path.expanduser('~/converted_benchmark_data/{}'.format(basename))
 data_path = "{}/camodocal_input_data".format(output_path)
@@ -102,7 +102,6 @@ with Reader(input_rosbag) as reader:
             with open(fn, 'w') as writer:
                 writer.write(calib_yaml_template.format(multi_camera_models[count],"'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
             print("Saved: {}".format(fn))        
-    exit(0)
     print("Parsing odometry data:")
     for connection, timestamp, rawdata in reader.messages(connections=odom_connections):
         msg = deserialize_ros1(rawdata, connection.msgtype)
@@ -113,19 +112,21 @@ with Reader(input_rosbag) as reader:
             writer.write('{} {} {} {} {} {} {} {} {} {} {} {}'.format(r_m[0][0], r_m[0][1], r_m[0][2], r_m[1][0], r_m[1][1], r_m[1][2], r_m[2][0], r_m[2][1], r_m[2][2], msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z))
         print("Saved: {}".format(fn))
     print("Parsing Image data:")
-    for connection, timestamp, rawdata in reader.messages(connections=image_connections):
-        msg = deserialize_ros1(rawdata, connection.msgtype)
+    for count, image_connections in enumerate(multi_image_connections):
+        for connection, timestamp, rawdata in reader.messages(connections=image_connections):
+            msg = deserialize_ros1(rawdata, connection.msgtype)
         
-        if msg.encoding != 'rgb8':
-            print("We only support rgb8, the provided image encoding is {}".format(msg.encoding))
-            exit(0)
-
-        image_data = msg.data.reshape([msg.height, msg.step])
-        image_data_3 = np.zeros([msg.height, msg.width, 3])
-        image_data_3[:,:,0] = image_data[:,0::3]
-        image_data_3[:,:,1] = image_data[:,1::3]
-        image_data_3[:,:,2] = image_data[:,2::3]
-        gray = rgb2gray(image_data_3)
-        fn = '{}/camera_{}_{}.png'.format(data_path, camera_name, timestamp)
-        plt.imsave( fn, gray, cmap='gray',format='png', vmin=0, vmax=1)
-        print("Saved: {}".format(fn))
+            if msg.encoding == 'rgb8':
+                image_data = msg.data.reshape([msg.height, msg.step])
+                image_data_3 = np.zeros([msg.height, msg.width, 3])
+                image_data_3[:,:,0] = image_data[:,0::3]
+                image_data_3[:,:,1] = image_data[:,1::3]
+                image_data_3[:,:,2] = image_data[:,2::3]
+                gray = rgb2gray(image_data_3)
+            elif msg.encoding == '8UC1':
+                gray = msg.data.reshape([msg.height, msg.step])/255
+            else:
+                print("Unsupported image format: {}".format(msg.encoding))
+            fn = '{}/camera_{}_{}.png'.format(data_path, count, timestamp)
+            plt.imsave( fn, gray, cmap='gray',format='png', vmin=0, vmax=1)
+            print("Saved: {}".format(fn))
