@@ -27,7 +27,7 @@ data_path = "{}/camodocal_input_data".format(output_path)
 caminfo_path = "{}/camodocal_input_caminfo".format(output_path)
 
 multi_image_topics = ['/d400/color/image_raw','/t265/fisheye1/image_raw' ]
-multi_camera_models = ['PINHOLE', 'MEI']
+multi_camera_models = ['PINHOLE', 'PINHOLE']
 odom_topics = ['/odom']
 multi_caminfo_topics = ['/d400/color/camera_info', '/t265/fisheye1/camera_info']
 
