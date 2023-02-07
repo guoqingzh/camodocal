@@ -107,7 +107,7 @@ with Reader(input_rosbag) as reader:
         msg = deserialize_ros1(rawdata, connection.msgtype)
         r = R.from_quat([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
         r_m = r.as_matrix()
-        fn = '{}/pose_{}.txt'.format(data_path, timestamp)
+        fn = '{}/pose_{}.txt'.format(data_path, timestamp*1e-9)
         with open(fn, 'w') as writer:
             writer.write('{} {} {} {} {} {} {} {} {} {} {} {}'.format(r_m[0][0], r_m[0][1], r_m[0][2], r_m[1][0], r_m[1][1], r_m[1][2], r_m[2][0], r_m[2][1], r_m[2][2], msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z))
         print("Saved: {}".format(fn))
@@ -127,6 +127,6 @@ with Reader(input_rosbag) as reader:
                 gray = msg.data.reshape([msg.height, msg.step])/255
             else:
                 print("Unsupported image format: {}".format(msg.encoding))
-            fn = '{}/camera_{}_{}.png'.format(data_path, count, timestamp)
+            fn = '{}/camera_{}_{}.png'.format(data_path, count, timestamp*1e-9)
             plt.imsave( fn, gray, cmap='gray',format='png', vmin=0, vmax=1)
             print("Saved: {}".format(fn))
