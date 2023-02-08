@@ -41,6 +41,7 @@ main(int argc, char** argv)
     std::string calibDir;
     std::string odoEstimateFile;
     int cameraCount;
+    int cameraIndex;
     float focal;
     std::string outputDir;
     int nMotions;
@@ -61,7 +62,8 @@ main(int argc, char** argv)
         ("calib,c", boost::program_options::value<std::string>(&calibDir)->default_value("calib"), "Directory containing camera calibration files.")
         ("estimate,e", boost::program_options::value<std::string>(&odoEstimateFile), "File containing estimate for the extrinsic calibration.")
         ("camera-count", boost::program_options::value<int>(&cameraCount)->default_value(1), "Number of cameras in rig.")
-        ("f", boost::program_options::value<float>(&focal)->default_value(300.0f), "Nominal focal length.")
+        ("camera-index", boost::program_options::value<int>(&cameraIndex)->default_value(-1), "Select a camera to use for calibration, all cameras are used by default")
+	("f", boost::program_options::value<float>(&focal)->default_value(300.0f), "Nominal focal length.")
         ("output,o", boost::program_options::value<std::string>(&outputDir)->default_value("calibration_data"), "Directory to write calibration data to.")
         ("motions,m", boost::program_options::value<int>(&nMotions)->default_value(500), "Number of motions for calibration.")
         ("begin-stage", boost::program_options::value<int>(&beginStage)->default_value(0), "Stage to begin from.")
@@ -93,42 +95,43 @@ main(int argc, char** argv)
 
     std::cout << "# INFO: Initializing... " << std::endl << std::flush;
 
-    if (beginStage > 0)
-    {
-#ifdef HAVE_CUDA 
-        // check for CUDA devices
-        cv::cuda::DeviceInfo info;
-        if (cv::cuda::getCudaEnabledDeviceCount() > 0 && info.isCompatible())
-        {
-            cv::cuda::setDevice(0);
-            cv::cuda::resetDevice();
-
-            // dummy function call
-            cv::Mat dummy(1, 1, CV_8UC1);
-            dummy = cv::Scalar(0);
-
-            cv::cuda::GpuMat dummyGPU;
-            dummyGPU.upload(dummy);
-
-            dummyGPU.release();
-        }
-        else
-        {
-            std::cout << "# ERROR: No Cuda device found!\n";
-            exit(1);
-        }
-#else  // HAVE_CUDA
-        std::cout << "# ERROR: Application not compiled with CUDA! Either recompile with CUDA or modify this program to work without it.\n";
-        exit(1);
-#endif // HAVE_CUDA
-    }
-
+//    if (beginStage > 0)
+//    {
+//#ifdef HAVE_CUDA 
+//        // check for CUDA devices
+//        cv::cuda::DeviceInfo info;
+//        if (cv::cuda::getCudaEnabledDeviceCount() > 0 && info.isCompatible())
+//        {
+//            cv::cuda::setDevice(0);
+//            cv::cuda::resetDevice();
+//
+//            // dummy function call
+//            cv::Mat dummy(1, 1, CV_8UC1);
+//            dummy = cv::Scalar(0);
+//
+//            cv::cuda::GpuMat dummyGPU;
+//            dummyGPU.upload(dummy);
+//
+//            dummyGPU.release();
+//        }
+//        else
+//        {
+//            std::cout << "# ERROR: No Cuda device found!\n";
+//            exit(1);
+//        }
+//#else  // HAVE_CUDA
+//        std::cout << "# ERROR: Application not compiled with CUDA! Either recompile with CUDA or modify this program to work without it.\n";
+//        exit(1);
+//#endif // HAVE_CUDA
+//    }
+//
     //========================= Handling Input =======================
 
     //===========================Initialize calibration==========================
 
     // read camera params
     std::vector<camodocal::CameraPtr> cameras(cameraCount);
+
     for (int i = 0; i < cameraCount; ++i)
     {
         camodocal::CameraPtr camera;
@@ -205,6 +208,7 @@ main(int argc, char** argv)
     typedef std::map<int64_t, Eigen::Isometry3f, std::less<int64_t>, Eigen::aligned_allocator<std::pair<const int64_t, Eigen::Isometry3f> > > IsometryMap;
 
     std::vector< ImageMap > inputImages(cameraCount);
+    
     IsometryMap inputOdometry;
     bool bUseGPS = false;
     if (eventFile.length() == 0)
@@ -337,20 +341,42 @@ main(int argc, char** argv)
     options.dataDir = dataDir;
     options.verbose = verbose;
 
-    CamRigOdoCalibration camRigOdoCalib(cameras, options);
-
-    for(auto it : estimates) camRigOdoCalib.setInitialCameraOdoTransformEstimates(it.first, it.second);
-
-    std::cout << "# INFO: Initialization finished!" << std::endl;
-
-    std::thread inputThread([&inputImages, &inputOdometry, &camRigOdoCalib, cameraCount, bUseGPS]()
+    
+    std::vector<camodocal::CameraPtr> camerasCal;
+    std::vector< ImageMap > inputImagesCal;
+    int cameraCountCal = 0;
+    if (cameraIndex == -1) {
+	// use all cameras    
+    	camerasCal = cameras;
+	cameraCountCal = cameraCount;
+	inputImagesCal = inputImages;
+    } else {
+	// use a selected camera   
+	camerasCal.push_back(cameras[cameraIndex]);    
+    	cameraCountCal = 1;
+	inputImagesCal.push_back(inputImages[cameraIndex]);
+    } 
+    CamRigOdoCalibration camRigOdoCalib(camerasCal, options);
+     
+    if (cameraIndex == -1) {
+    	for(auto it : estimates) camRigOdoCalib.setInitialCameraOdoTransformEstimates(it.first, it.second);
+    } else {
+	// here the index is 0, since we have only 1 camera    
+    	if (!estimates.empty())
+	    camRigOdoCalib.setInitialCameraOdoTransformEstimates(0, estimates[cameraIndex]);
+    }
+    
+    std::cout << "# INFO: Initialization finished! CameraIndex = "<< cameraIndex << std::endl;
+    
+    
+    std::thread inputThread([&inputImagesCal, &inputOdometry, &camRigOdoCalib, cameraCountCal, bUseGPS]()
     {
         //uint64_t lastTimestamp = std::numeric_limits<uint64_t>::max();
 
-        std::vector<ImageMap::iterator> camIterator(cameraCount);
+        std::vector<ImageMap::iterator> camIterator(cameraCountCal);
         IsometryMap::iterator locIterator = inputOdometry.begin();
-        for (int c=0; c < cameraCount; c++)
-            camIterator[c] = inputImages[c].begin();
+        for (int c=0; c < cameraCountCal; c++)
+            camIterator[c] = inputImagesCal[c].begin();
 
         auto addLocation = [&camRigOdoCalib, bUseGPS](uint64_t timestamp, const Eigen::Isometry3f& T)
         {
@@ -392,9 +418,9 @@ main(int argc, char** argv)
             while(hasData)
             {
                 hasData = false;
-                for (int c=0; c < cameraCount; c++)
+                for (int c=0; c < cameraCountCal; c++)
                 {
-                    if(camIterator[c] == inputImages[c].end()) continue;
+                    if(camIterator[c] == inputImagesCal[c].end()) continue;
                     if(camIterator[c]->first < locTime)
                     {
                         uint64_t camTime = camIterator[c]->first;
@@ -526,7 +552,7 @@ main(int argc, char** argv)
 
     float camHeightDiff = cameraSystem.getGlobalCameraPose(0)(2,3) - refCameraGroundHeight;
     std::cout << "# INFO: Current estimate (global):" << std::endl;
-    for (int i = 0; i < cameraCount; ++i)
+    for (int i = 0; i < cameraCountCal; ++i)
     {
         Eigen::Matrix4d H = cameraSystem.getGlobalCameraPose(i);
         //H.block<3,1>(0,1) *= -1;
@@ -536,7 +562,7 @@ main(int argc, char** argv)
 
         T[2] -= camHeightDiff;
 
-        std::cout << "========== Camera " << i << " ==========" << std::endl;
+        std::cout << "========== Camera " << (cameraIndex == -1 ? i : cameraIndex ) << " ==========" << std::endl;
         std::cout << "Rotation: " << std::endl;
         std::cout << H.block<3,3>(0,0) << std::endl;
 
