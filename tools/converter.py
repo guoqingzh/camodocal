@@ -20,14 +20,14 @@ import numpy as np
 ##
 
 
-input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/cafe1-1.bag')
+input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/corridor1-1.bag')
 basename = os.path.splitext(os.path.basename(input_rosbag))[0]
 output_path = os.path.expanduser('~/converted_benchmark_data/{}'.format(basename))
 data_path = "{}/camodocal_input_data".format(output_path)
 caminfo_path = "{}/camodocal_input_caminfo".format(output_path)
 
 multi_image_topics = ['/d400/color/image_raw','/t265/fisheye1/image_raw' ]
-multi_camera_models = ['PINHOLE', 'PINHOLE']
+multi_camera_models = ['PINHOLE', 'KANNALA_BRANDT']
 odom_topics = ['/odom']
 multi_caminfo_topics = ['/d400/color/camera_info', '/t265/fisheye1/camera_info']
 
@@ -35,9 +35,9 @@ odom_connections = []
 multi_image_connections = []
 multi_caminfo_connections = []
 
-calib_yaml_template = ("%YAML:1.0\n"
+calib_yaml_template_pinhole = ("%YAML:1.0\n"
         "---\n"
-        "model_type: {}\n"
+        "model_type: PINHOLE\n"
         "camera_name: {}\n"
         "image_width: {}\n"
         "image_height: {}\n"
@@ -51,6 +51,24 @@ calib_yaml_template = ("%YAML:1.0\n"
         "    fy: {}\n"
         "    cx: {}\n"
         "    cy: {}\n")
+
+calib_yaml_template_kb = ("%YAML:1.0\n"
+        "---\n"
+        "model_type: KANNALA_BRANDT\n"
+        "camera_name: {}\n"
+        "image_width: {}\n"
+        "image_height: {}\n"
+        "projection_parameters:\n"
+        "    k2: {}\n"
+        "    k3: {}\n"
+        "    k4: {}\n"
+        "    k5: {}\n"
+        "    mu: {}\n"
+        "    mv: {}\n"
+        "    u0: {}\n"
+        "    v0: {}\n")
+
+
 
 def rgb2gray(rgb):
     return np.dot(rgb[...,:3]/255, [0.2989, 0.5870, 0.1140])
@@ -66,8 +84,8 @@ def make_folder(path):
         print("Output dir {} is not empty !".format(path))
         exit(0)
 
-make_folder(data_path)
-make_folder(caminfo_path)
+#make_folder(data_path)
+#make_folder(caminfo_path)
 
 with Reader(input_rosbag) as reader:
     for connection in reader.connections:
@@ -98,9 +116,13 @@ with Reader(input_rosbag) as reader:
     for count, caminfo_connections in enumerate(multi_caminfo_connections):
         for connection, timestamp, rawdata in reader.messages(connections=caminfo_connections):
             msg = deserialize_ros1(rawdata, connection.msgtype)
+            print("Distortion model of Camera {}:".format(count)+msg.distortion_model)
             fn = '{}/camera_{}_calib.yaml'.format(caminfo_path, count)
             with open(fn, 'w') as writer:
-                writer.write(calib_yaml_template.format(multi_camera_models[count],"'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
+                if msg.distortion_model in ['plumb_bob', 'brown_conrady', 'Brown Conrady', 'Plumb Bob']:
+                    writer.write(calib_yaml_template_pinhole.format("'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
+                if msg.distortion_model in ['kannala_brandt4', 'Kannala Brandt4']:
+                    writer.write(calib_yaml_template_kb.format("'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
             print("Saved: {}".format(fn))        
     print("Parsing odometry data:")
     for connection, timestamp, rawdata in reader.messages(connections=odom_connections):
