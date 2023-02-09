@@ -20,7 +20,7 @@ import numpy as np
 ##
 
 
-input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/corridor1-1.bag')
+input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/cafe1-1.bag')
 basename = os.path.splitext(os.path.basename(input_rosbag))[0]
 output_path = os.path.expanduser('~/converted_benchmark_data/{}'.format(basename))
 data_path = "{}/camodocal_input_data".format(output_path)
