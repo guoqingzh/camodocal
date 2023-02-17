@@ -48,9 +48,9 @@ for i in range(0,num_camera):
     print("Totally frames of camera{}:{}, time:{}s, from:{}".format(i, num_frames, timestamps[-1]-timestamps[0], timestamps[0]))
     timestamp_statistic(timestamps)
 
-posefiles = [f for f in listdir(mypath) if (isfile(join(mypath,f)) and f.startswith("pose_".format(i)))]
+posefiles = [f for f in listdir(mypath) if (isfile(join(mypath,f)) and f.startswith("pose_"))]
 num_poses, timestamps = get_timestamp(posefiles)
-print("Totally frames of camera{}:{}, time:{}s, from:{}".format(i, num_poses, timestamps[-1]-timestamps[0], timestamps[0]))
+print("Totally frames of pose: {}, time:{}s, from:{}".format(num_poses, timestamps[-1]-timestamps[0], timestamps[0]))
 timestamp_statistic(timestamps)
 
 

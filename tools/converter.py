@@ -1,6 +1,5 @@
 
 import os
-from rosbags.rosbag1 import Reader
 from rosbags.serde import deserialize_cdr, deserialize_ros1
 # create reader instance and open for reading
 from scipy.spatial.transform import Rotation as R
@@ -13,23 +12,40 @@ import numpy as np
 # Please note the followings:
 # - The script is coded specifically to support benchmark data 
 #   from https://lifelong-robotic-vision.github.io/dataset/scene.html
-# - we only support one camera. 
+#   and vslam teams's recording from
+#   \\ger\ec\proj\ha\RSG\3D_ValidationVol2\AICV_SLAM_DATA\phase4
 # 
 # For support on this script. please contact 
 #   guoqing.zhang@intel.com
 ##
 
+## data specific variable start
+#input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/office1-2.bag')
+#multi_image_topics = ['/t265/fisheye1/image_raw','/t265/fisheye2/image_raw' ]
+#odom_topics = ['/odom']
+#multi_caminfo_topics = ['/t265/fisheye1/camera_info', '/t265/fisheye2/camera_info']
+#suffix = "_two_fisheyes"
+## data specifc variable end
 
-input_rosbag = os.path.expanduser('~/benchmark_data/lifelong-robotics/corridor1-1.bag')
-basename = os.path.splitext(os.path.basename(input_rosbag))[0]
-output_path = os.path.expanduser('~/converted_benchmark_data/{}'.format(basename))
+## data specific variable start
+input_rosbag = os.path.expanduser('~/benchmark_data/vslam-recordings/SL03')
+multi_image_topics = ['/camera0/color/image_raw','/camera1/color/image_raw' ]
+odom_topics = ['/odom']
+multi_caminfo_topics = ['/camera0/color/camera_info', '/camera1/color/camera_info']
+suffix = ""
+## data specifc variable end
+
+
+data_name = os.path.splitext(os.path.basename(input_rosbag))[0]+suffix
+dataset_name = os.path.normpath(os.path.dirname(input_rosbag)).split(os.sep)[-1]
+if dataset_name == 'lifelong-robotics':
+    from rosbags.rosbag1 import Reader
+else:
+    from rosbags.rosbag2 import Reader
+
+output_path = os.path.expanduser('~/converted_benchmark_data/{}/{}'.format(dataset_name,data_name))
 data_path = "{}/camodocal_input_data".format(output_path)
 caminfo_path = "{}/camodocal_input_caminfo".format(output_path)
-
-multi_image_topics = ['/d400/color/image_raw','/t265/fisheye1/image_raw' ]
-multi_camera_models = ['PINHOLE', 'KANNALA_BRANDT']
-odom_topics = ['/odom']
-multi_caminfo_topics = ['/d400/color/camera_info', '/t265/fisheye1/camera_info']
 
 odom_connections = []
 multi_image_connections = []
@@ -84,8 +100,8 @@ def make_folder(path):
         print("Output dir {} is not empty !".format(path))
         exit(0)
 
-#make_folder(data_path)
-#make_folder(caminfo_path)
+make_folder(data_path)
+make_folder(caminfo_path)
 
 with Reader(input_rosbag) as reader:
     for connection in reader.connections:
@@ -115,7 +131,10 @@ with Reader(input_rosbag) as reader:
     print("Parsing camera info:")
     for count, caminfo_connections in enumerate(multi_caminfo_connections):
         for connection, timestamp, rawdata in reader.messages(connections=caminfo_connections):
-            msg = deserialize_ros1(rawdata, connection.msgtype)
+            if dataset_name == 'lifelong-robotics':
+                msg = deserialize_ros1(rawdata, connection.msgtype)
+            else:
+                msg = deserialize_cdr(rawdata, connection.msgtype)
             print("Distortion model of Camera {}:".format(count)+msg.distortion_model)
             fn = '{}/camera_{}_calib.yaml'.format(caminfo_path, count)
             with open(fn, 'w') as writer:
@@ -123,21 +142,27 @@ with Reader(input_rosbag) as reader:
                     writer.write(calib_yaml_template_pinhole.format("'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
                 if msg.distortion_model in ['kannala_brandt4', 'Kannala Brandt4']:
                     writer.write(calib_yaml_template_kb.format("'"+str(count)+"'",msg.width,msg.height, msg.d[0], msg.d[1], msg.d[2], msg.d[3], msg.k[0], msg.k[4], msg.k[2], msg.k[5] ))
-            print("Saved: {}".format(fn))        
+            print("Saved: {}, {}".format(fn, connection.topic))        
     print("Parsing odometry data:")
     for connection, timestamp, rawdata in reader.messages(connections=odom_connections):
-        msg = deserialize_ros1(rawdata, connection.msgtype)
+        if dataset_name == 'lifelong-robotics':
+            msg = deserialize_ros1(rawdata, connection.msgtype)
+        else:
+            msg = deserialize_cdr(rawdata, connection.msgtype)
         r = R.from_quat([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w])
         r_m = r.as_matrix()
-        fn = '{}/pose_{}.txt'.format(data_path, timestamp*1e-9)
+        fn = '{}/pose_{}.txt'.format(data_path, timestamp)
         with open(fn, 'w') as writer:
             writer.write('{} {} {} {} {} {} {} {} {} {} {} {}'.format(r_m[0][0], r_m[0][1], r_m[0][2], r_m[1][0], r_m[1][1], r_m[1][2], r_m[2][0], r_m[2][1], r_m[2][2], msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z))
-        print("Saved: {}".format(fn))
+        print("Saved: {}, {}".format(fn, connection.topic))
     print("Parsing Image data:")
     for count, image_connections in enumerate(multi_image_connections):
         for connection, timestamp, rawdata in reader.messages(connections=image_connections):
-            msg = deserialize_ros1(rawdata, connection.msgtype)
-        
+            if dataset_name == 'lifelong-robotics':
+                msg = deserialize_ros1(rawdata, connection.msgtype)
+            else:
+                msg = deserialize_cdr(rawdata, connection.msgtype)
+
             if msg.encoding == 'rgb8':
                 image_data = msg.data.reshape([msg.height, msg.step])
                 image_data_3 = np.zeros([msg.height, msg.width, 3])
@@ -149,6 +174,6 @@ with Reader(input_rosbag) as reader:
                 gray = msg.data.reshape([msg.height, msg.step])/255
             else:
                 print("Unsupported image format: {}".format(msg.encoding))
-            fn = '{}/camera_{}_{}.png'.format(data_path, count, timestamp*1e-9)
+            fn = '{}/camera_{}_{}.png'.format(data_path, count, timestamp)
             plt.imsave( fn, gray, cmap='gray',format='png', vmin=0, vmax=1)
-            print("Saved: {}".format(fn))
+            print("Saved: {}, {}".format(fn, connection.topic))
