@@ -42,6 +42,7 @@ main(int argc, char** argv)
     std::string odoEstimateFile;
     int cameraCount;
     int cameraIndex;
+    uint64_t startTs;
     float focal;
     std::string outputDir;
     int nMotions;
@@ -63,6 +64,8 @@ main(int argc, char** argv)
         ("estimate,e", boost::program_options::value<std::string>(&odoEstimateFile), "File containing estimate for the extrinsic calibration.")
         ("camera-count", boost::program_options::value<int>(&cameraCount)->default_value(1), "Number of cameras in rig.")
         ("camera-index", boost::program_options::value<int>(&cameraIndex)->default_value(-1), "Select a camera to use for calibration, all cameras are used by default")
+	("start-ts", boost::program_options::value<uint64_t>(&startTs)->default_value(0), "Provide timestamp to start with")
+
 	("f", boost::program_options::value<float>(&focal)->default_value(300.0f), "Nominal focal length.")
         ("output,o", boost::program_options::value<std::string>(&outputDir)->default_value("calibration_data"), "Directory to write calibration data to.")
         ("motions,m", boost::program_options::value<int>(&nMotions)->default_value(500), "Number of motions for calibration.")
@@ -232,8 +235,11 @@ main(int argc, char** argv)
                     printf("cannot find input image camera_[d]_[llu].png\n");
                     return 1;
                 }
-                printf("image name : %s time : %ld", it->path().string().c_str(), timestamp);
-                inputImages[camera][timestamp] = it->path().string();
+                
+		if (timestamp >= startTs) {
+		    printf("image name : %s time : %ld, startTime : %ld\n", it->path().string().c_str(), timestamp, startTs);
+                    inputImages[camera][timestamp] = it->path().string();
+		}
             }
 
             if (fs::is_regular_file(*it) && it->path().extension() == ".txt" && it->path().filename().string().find_first_of("pose_") == 0)
@@ -367,7 +373,6 @@ main(int argc, char** argv)
     }
     
     std::cout << "# INFO: Initialization finished! CameraIndex = "<< cameraIndex << std::endl;
-    
     
     std::thread inputThread([&inputImagesCal, &inputOdometry, &camRigOdoCalib, cameraCountCal, bUseGPS]()
     {
